@@ -1,35 +1,30 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import emailjs from '@emailjs/browser';
 import { EMAIL_CONFIG } from '../utils/emailConfig';
+
+const PRODUCT_MAP = {
+  'fruit-drying-oil': 'Fruit Drying Oil (Agri-Spec)',
+  'sugar-chemicals': 'Sugar Refinement Chemicals',
+  'industrial-chemicals': 'Basic Industrial Chemicals',
+  'wire-cables': 'Electrical Wire & Cables'
+};
 
 const Enquiry = () => {
   const { productLink } = useParams();
   const form = useRef();
   
   const [status, setStatus] = useState('IDLE'); // IDLE, SENDING, SUCCESS, ERROR
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState(() => ({
     user_name: '',
     user_email: '',
     user_phone: '',
     company_name: '',
-    product_type: '',
+    product_type: (productLink && PRODUCT_MAP[productLink]) ? PRODUCT_MAP[productLink] : '',
     message: ''
-  });
-
-  const productMap = {
-    'fruit-drying-oil': 'Fruit Drying Oil (Agri-Spec)',
-    'sugar-chemicals': 'Sugar Refinement Chemicals',
-    'industrial-chemicals': 'Basic Industrial Chemicals',
-    'wire-cables': 'Electrical Wire & Cables'
-  };
-
-  useEffect(() => {
-    if (productLink && productMap[productLink]) {
-      setFormData(prev => ({ ...prev, product_type: productMap[productLink] }));
-    }
-  }, [productLink]);
+  }));
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -38,6 +33,22 @@ const Enquiry = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    // 1. Honeypot check
+    if (e.target.bot_ref && e.target.bot_ref.value) {
+      console.warn("Bot detected.");
+      setStatus('SUCCESS'); // Silently succeed for bots
+      return;
+    }
+
+    // 2. Rate limiting check
+    const lastSubmit = localStorage.getItem('last_enquiry_submit');
+    const nowTimestamp = Date.now();
+    if (lastSubmit && nowTimestamp - parseInt(lastSubmit) < EMAIL_CONFIG.COOLDOWN_PERIOD) {
+      alert(`Please wait ${Math.ceil((EMAIL_CONFIG.COOLDOWN_PERIOD - (nowTimestamp - parseInt(lastSubmit))) / 1000)}s before sending another enquiry.`);
+      return;
+    }
+
     setStatus('SENDING');
 
     // If no credentials provided yet, simulate success for UX demo
@@ -52,6 +63,7 @@ const Enquiry = () => {
       form.current,
       EMAIL_CONFIG.PUBLIC_KEY
     ).then(() => {
+      localStorage.setItem('last_enquiry_submit', Date.now().toString());
       setStatus('SUCCESS');
     }).catch((err) => {
       console.error('EmailJS Error:', err);
@@ -125,6 +137,10 @@ const Enquiry = () => {
                 className="bg-[var(--color-bone)] p-8 md:p-12 border-4 border-[var(--color-iron-900)] rough-border shadow-[12px_12px_0px_var(--color-iron-900)]"
               >
                 <form ref={form} onSubmit={handleSubmit} className="flex flex-col gap-8">
+                  {/* Honeypot field - hidden from humans */}
+                  <div style={{ display: 'none' }} aria-hidden="true">
+                    <input type="text" name="bot_ref" tabIndex="-1" autoComplete="off" />
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="flex flex-col gap-2">
                        <label className="blueprint-label text-xs">CONTACT NAME</label>
@@ -187,9 +203,10 @@ const Enquiry = () => {
                       className="p-4 border-2 border-[var(--color-iron-900)] bg-transparent outline-none font-black appearance-none uppercase tracking-tight cursor-pointer"
                     >
                       <option value="">-- SELECT PRODUCT CATEGORY --</option>
-                      {Object.values(productMap).map(val => (
-                        <option key={val} value={val}>{val}</option>
-                      ))}
+                      <option value="Fruit Drying Oil (Agri-Spec)">Fruit Drying Oil (Agri-Spec)</option>
+                      <option value="Sugar Refinement Chemicals">Sugar Refinement Chemicals</option>
+                      <option value="Basic Industrial Chemicals">Basic Industrial Chemicals</option>
+                      <option value="Electrical Wire & Cables">Electrical Wire & Cables</option>
                     </select>
                   </div>
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+// eslint-disable-next-line no-unused-vars
 import { motion, useScroll, useSpring } from 'framer-motion';
 
 const Navbar = () => {

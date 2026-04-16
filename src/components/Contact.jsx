@@ -8,6 +8,22 @@ const Contact = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    // 1. Honeypot check
+    if (e.target.bot_ref && e.target.bot_ref.value) {
+      console.warn("Bot detected.");
+      setStatus('SUCCESS'); // Silently succeed for bots
+      return;
+    }
+
+    // 2. Rate limiting check
+    const lastSubmit = localStorage.getItem('last_contact_submit');
+    const nowTimestamp = Date.now();
+    if (lastSubmit && nowTimestamp - parseInt(lastSubmit) < EMAIL_CONFIG.COOLDOWN_PERIOD) {
+      alert(`Please wait ${Math.ceil((EMAIL_CONFIG.COOLDOWN_PERIOD - (nowTimestamp - parseInt(lastSubmit))) / 1000)}s before sending another message.`);
+      return;
+    }
+
     setStatus('SENDING');
 
     if (EMAIL_CONFIG.SERVICE_ID === "service_placeholder") {
@@ -24,6 +40,7 @@ const Contact = () => {
       form.current,
       EMAIL_CONFIG.PUBLIC_KEY
     ).then(() => {
+      localStorage.setItem('last_contact_submit', Date.now().toString());
       setStatus('SUCCESS');
       setTimeout(() => setStatus('IDLE'), 3000);
     }).catch((err) => {
@@ -84,6 +101,10 @@ const Contact = () => {
               </div>
             ) : (
               <form ref={form} className="flex flex-col gap-6" onSubmit={handleSubmit}>
+                {/* Honeypot field - hidden from humans */}
+                <div style={{ display: 'none' }} aria-hidden="true">
+                  <input type="text" name="bot_ref" tabIndex="-1" autoComplete="off" />
+                </div>
                 <div className="flex flex-col gap-2">
                   <label className="text-sm font-bold uppercase tracking-widest">Company Name</label>
                   <input 

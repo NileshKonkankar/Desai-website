@@ -3,22 +3,22 @@ import { useFrame } from '@react-three/fiber';
 import { Float, Line, Sphere } from '@react-three/drei';
 import * as THREE from 'three';
 
+// Generate static atoms once to avoid purity issues in render
+const STATIC_ATOMS = Array.from({ length: 40 }).map(() => ({
+  position: [
+    (Math.random() - 0.5) * 15,
+    (Math.random() - 0.5) * 15,
+    (Math.random() - 0.5) * 10
+  ],
+  scale: Math.random() * 0.5 + 0.2,
+  color: Math.random() > 0.85 ? '#eb5a00' : Math.random() > 0.3 ? '#2d2c2f' : '#dbd2c3'
+}));
+
 const Molecules3D = () => {
   const groupRef = useRef();
 
-  // Generate random clustered "Atoms" (spheres)
-  const atoms = useMemo(() => {
-    return Array.from({ length: 40 }).map(() => ({
-      position: [
-        (Math.random() - 0.5) * 15, // Spread X
-        (Math.random() - 0.5) * 15, // Spread Y
-        (Math.random() - 0.5) * 10  // Spread Z
-      ],
-      scale: Math.random() * 0.5 + 0.2,
-      // Color probability: mostly Iron-900 (#2d2c2f) and Bone (#dbd2c3), occasional Signal (#eb5a00)
-      color: Math.random() > 0.85 ? '#eb5a00' : Math.random() > 0.3 ? '#2d2c2f' : '#dbd2c3'
-    }));
-  }, []);
+  // Atoms and bonds are derived from the static baseline
+  const atoms = useMemo(() => STATIC_ATOMS, []);
 
   // Generate bonds (lines) between close atoms
   const bonds = useMemo(() => {

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+// eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
 
 // Asset Imports
@@ -65,7 +66,7 @@ const Products = () => {
         </h2>
 
         <div className="relative z-10 flex flex-col gap-48">
-          {products.map((product, index) => (
+          {products.map((product) => (
             <motion.div 
               key={product.id}
               className={`flex flex-col lg:flex-row items-center gap-16 lg:gap-32 group ${product.reversed ? 'lg:flex-row-reverse' : ''}`}
